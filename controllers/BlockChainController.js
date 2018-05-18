@@ -56,4 +56,24 @@ module.exports = class BlockChainController {
 
 		return true;
 	}
+
+
+	// blockChainToValid = BlockChain
+	isVaildChain(blockChainToValid) {
+		function isValidGenesis(block) {
+			return JSON.stringify(block) === JSON.stringify(this.blockCtr.genesisBlock())
+		};
+
+		if (!isValidGenesis(blockChainToValid.blocks[0])) {
+			return false;
+		}
+
+		for (i = 1; i < blockChainToValid.blocks.length; i++) {
+			if (!isValidNewBlock(blockChainToValid[i]), blockChainToValid[i - 1]) {
+				return false;
+			}
+		}
+
+		return true;
+	}
 }

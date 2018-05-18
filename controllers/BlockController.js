@@ -1,7 +1,7 @@
 "use strict";
 // Lib
 var SHA256 = require("crypto-js/sha256");
-
+var validator = require("validator");
 // Controller 
 var BlockChainController = require('./BlockChainController');
 
@@ -23,5 +23,17 @@ module.exports = class BlockController {
 		var initData = new Data(0, 'Hoang Trong Anh', 10);
 		var hash = this.calculateHash(0, 0, this.getTimeNow(), initData);
 		return new Block(0, hash, 0, this.getTimeNow(), initData);
+	}
+
+	isValidBlockStructure(block) {
+		if (block) {
+			return validator.isNumberic(block.index) 
+				&& validator.isHash(block.hash, 'sha256') 
+				&& validator.isHash(previousHash, 'sha256')
+				&& validator.isNumberic(block.timeStamp)
+				&& typeof block.data === 'object'
+		}
+
+		return false
 	}
 }
