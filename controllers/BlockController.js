@@ -27,10 +27,10 @@ module.exports = class BlockController {
 
 	isValidBlockStructure(block) {
 		if (block) {
-			return validator.isNumberic(block.index) 
+			return typeof block.index === 'number'
 				&& validator.isHash(block.hash, 'sha256') 
-				&& validator.isHash(previousHash, 'sha256')
-				&& validator.isNumberic(block.timeStamp)
+				&& validator.isHash(block.previousHash, 'sha256')
+				&& typeof block.timeStamp === 'number'
 				&& typeof block.data === 'object'
 		}
 

@@ -3,6 +3,7 @@ var BlockChain = require('../models/BlockChain');
 var BlockController = require('./BlockController');
 var Block = require("../models/Block");
 var parserData = require("../parsers/ParserURLToData"); 
+var P2P = require('./PeerToPeerWebSocket');
 
 module.exports = class BlockChainController {
 	constructor() {
@@ -75,5 +76,20 @@ module.exports = class BlockChainController {
 		}
 
 		return true;
+	}
+
+	addBlockToChain(newBlock) {
+		if (this.isValidNewBlock(newBlock, this.getLastestBlock())) {
+			this.blockChain.blocks.push(newBlock);
+			return true
+		}
+		return false;
+	}
+
+	replaceChain(newChain) {
+		if (this.isVaildChain(newChain) && newChain.blocks.length > this.getAllBlocks().length) {
+			this.blockChain = newChain;
+			P2P().broadcastLatest();
+		}
 	}
 }

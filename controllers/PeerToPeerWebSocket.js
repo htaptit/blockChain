@@ -1,27 +1,27 @@
 'use strict';
 
-// const Message = require('../models/Message');
-
 const BlockChainController = require('./BlockChainController');
-const WebSocket = require('ws');
-const Message = require('../models/Message');
+const BlockController = require('./BlockController');
 
-module.exports.MessageType = {
-	QUERY_LATEST : 0,
-	QUERY_ALL : 1,
-	RESPONSE_BLOCKCHAIN : 2
-}
+const WebSocket = require('ws');
+const { Message, MessageType } = require('../models/Message');
+
 
 module.exports = class P2P {
+	
 	constructor() {
 		this.sockets = [];
-		this.blockChainController = BlockChainController();
+		this.MessageType = new MessageType();
+		this.Message = new Message();
+		this.blockChainController = new BlockChainController();
+		this.blockController = new BlockController();
 	}
 
 	initP2PServer(p2pPort) {
 		const server = new WebSocket.Server({ port : p2pPort});
 		server.on('connection', (ws) => {
 
+			this.initConnection(ws);
 		});
 	}
 
@@ -30,8 +30,11 @@ module.exports = class P2P {
 		this.sockets.push(webSocket);
 		this.initMessageHandler(webSocket);
 		this.initErrorHandler(webSocket);
-		write(webSocket, queryChainLengthMsg());
+		this.write(webSocket, this.queryLastestMsg());
+	}
 
+	getSockets() {
+		return this.sockets;
 	}
 
 	write(webSocket, message) {
@@ -42,20 +45,24 @@ module.exports = class P2P {
 		this.sockets.forEach(socket => this.write(socket, message));
 	}
 
+	broadCastLatest() {
+		this.broadCast(this.responseLastestMsg());
+	}
+
 	queryLastestMsg() {
-		return new Message(MessageType.QUERY_LATEST, null);
+		return new Message(this.MessageType.QUERY_LATEST, null);
 	}
 
 	queryAllMsg() {
-		return new Message(MessageType.QUERY_ALL, null);
+		return new Message(this.MessageType.QUERY_ALL, null);
 	}
 
 	responseLastestMsg() {
-		return new Message( MessageType.RESPONSE_BLOCKCHAIN, JSON.stringify( [this.blockChainController.getLastestBlock()] ) );
+		return new Message( this.MessageType.RESPONSE_BLOCKCHAIN, JSON.stringify( [this.blockChainController.getLastestBlock()] ) );
 	}
 
 	responseChainMsg() {
-		return new Message(MessageType.RESPONSE_BLOCKCHAIN, JSON.stringify(this.blockChainController.getAllBlocks()));
+		return new Message(this.MessageType.RESPONSE_BLOCKCHAIN, JSON.stringify(this.blockChainController.getAllBlocks()));
 	}
 
 	initMessageHandler(webSocket) {
@@ -70,22 +77,53 @@ module.exports = class P2P {
 			console.log('Received message : ' + JSON.stringify(message));
 
 			switch (message.type) {
-				case MessageType.QUERY_LATEST: 
+				case this.MessageType.QUERY_LATEST: 
 					this.write(webSocket, this.responseLastestMsg());
 					break;
-				case MessgeType.QUERY_ALL:
+				case this.MessageType.QUERY_ALL:
 					this.write(webSocket, this.responseChainMsg())
 					break;
-				case MessageType.RESPONSE_BLOCKCHAIN:
+				case this.MessageType.RESPONSE_BLOCKCHAIN:
 					const receviedBlocks = this.jsonToBlockArrayStructor(message.data);
 
 					if (receviedBlocks === null) {
-
+						break;
 					}
+
+					this.handleBlockchainResponse(receviedBlocks);
 					
 					break;
 			}
 		});
+	}
+
+	handleBlockchainResponse(receviedBlocks) {
+		if (receviedBlocks.length === 0) {
+			return;
+		}
+
+		const lastestBlockReceived = receviedBlocks[receviedBlocks.length - 1];
+
+		if (!this.blockController.isValidBlockStructure(lastestBlockReceived)) {
+			return;
+		}
+
+		const lastestBlockHeld = this.blockChainController.getLastestBlock();
+
+		if (lastestBlockReceived.index > lastestBlockHeld.index) {
+			if (lastestBlockReceived.previousHash === lastestBlockHeld.hash) {
+				if (this.blockChainController.addBlockToChain(lastestBlockReceived)) {
+					this.broadCast(this.responseLastestMsg());
+				}
+			} else if (receviedBlocks.length === 1) { // receviedBlocks la cai cuoi cung trong chain.
+				this.broadCast(this.queryAllMsg());
+			} else {
+				this.blockChainController.replaceChain(receviedBlocks)
+			}
+		} else {
+			console.log(' <=> . Do nothing !');
+		}
+
 	}
 
 	initErrorHandler(webSocket) {
@@ -114,5 +152,17 @@ module.exports = class P2P {
 			console.error('Error parse : ' + e);
 			return null;
 		}
+	}
+
+	connectToPeer(newPeer) {
+		const ws = new WebSocket(newPeer);
+
+		ws.on('open', () => {
+			this.initConnection(ws);
+		});
+
+		ws.on('error', () => {
+			console.error('Connection faild ! ');
+		});
 	}
 }
