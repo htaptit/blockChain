@@ -6,9 +6,7 @@ const BlockController = require('./BlockController');
 const WebSocket = require('ws');
 const { Message, MessageType } = require('../models/Message');
 
-
 module.exports = class P2P {
-	
 	constructor() {
 		this.sockets = [];
 		this.MessageType = new MessageType();
@@ -17,12 +15,16 @@ module.exports = class P2P {
 		this.blockController = new BlockController();
 	}
 
+	init() {
+		
+	}
+
 	initP2PServer(p2pPort) {
 		const server = new WebSocket.Server({ port : p2pPort});
 		server.on('connection', (ws) => {
-
 			this.initConnection(ws);
 		});
+		console.log('listening websocket p2p port on: ' + p2pPort);
 	}
 
 	initConnection(webSocket) {
@@ -87,9 +89,10 @@ module.exports = class P2P {
 					const receviedBlocks = this.jsonToBlockArrayStructor(message.data);
 
 					if (receviedBlocks === null) {
+						console.log("data, ...args");
 						break;
 					}
-
+// console.log(receviedBlocks);
 					this.handleBlockchainResponse(receviedBlocks);
 					
 					break;
@@ -112,18 +115,41 @@ module.exports = class P2P {
 
 		if (lastestBlockReceived.index > lastestBlockHeld.index) {
 			if (lastestBlockReceived.previousHash === lastestBlockHeld.hash) {
-				if (this.blockChainController.addBlockToChain(lastestBlockReceived)) {
+				if (this.addBlockToChain(lastestBlockReceived)) {
 					this.broadCast(this.responseLastestMsg());
 				}
 			} else if (receviedBlocks.length === 1) { // receviedBlocks la cai cuoi cung trong chain.
 				this.broadCast(this.queryAllMsg());
 			} else {
-				this.blockChainController.replaceChain(receviedBlocks)
+				this.replaceChain(receviedBlocks);
 			}
 		} else {
 			console.log(' <=> . Do nothing !');
 		}
 
+	}
+
+	addBlockToChain(newBlock) {
+		if (this.blockChainController.isValidNewBlock(newBlock, this.blockChainController.getLastestBlock())) {
+			this.blockChainController.addNewBlockToChain(newBlock);
+			this.broadCastLatest();
+			return true
+		}
+		return false;
+	}
+
+	createNewBlock(data) {
+		var _ = this
+		this.blockChainController.addNewBlock(data, function(res) {
+			_.broadCastLatest();
+		});
+	}
+
+	replaceChain(newChain) {
+		if (this.blockChainController.isVaildChain(newChain) && newChain.blocks.length > this.blockChainController.getAllBlocks().length) {
+			this.blockChainController.blockChain = newChain;
+			this.broadCastLatest();
+		}
 	}
 
 	initErrorHandler(webSocket) {
@@ -161,8 +187,10 @@ module.exports = class P2P {
 			this.initConnection(ws);
 		});
 
-		ws.on('error', () => {
-			console.error('Connection faild ! ');
+		ws.on('error', (err) => {
+			console.error(err);
 		});
 	}
 }
+
+

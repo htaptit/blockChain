@@ -3,7 +3,6 @@ var BlockChain = require('../models/BlockChain');
 var BlockController = require('./BlockController');
 var Block = require("../models/Block");
 var parserData = require("../parsers/ParserURLToData"); 
-var P2P = require('./PeerToPeerWebSocket');
 
 module.exports = class BlockChainController {
 	constructor() {
@@ -12,18 +11,22 @@ module.exports = class BlockChainController {
 		this.blockChain.blocks.push(this.blockCtr.genesisBlock());
 	}
 
-	addNewBlock(blockDataRaw) {
+	addNewBlock(blockDataRaw, callback) {
 		var blockData = parserData.paramsToData(blockDataRaw);
 
 		if (blockData) {
 			var newBlock = this.generateNextBlock(blockData)
-			this.blockChain.blocks.push(newBlock);
-			return { status: true, new_block: newBlock };
+			this.addNewBlockToChain(newBlock);
+			callback({ status: true, new_block: newBlock });
 		}
 
-		return { status: false, new_block: null };
+		callback({ status: false, new_block: null });
 	}
 
+	addNewBlockToChain(newBlock) {
+		this.blockChain.blocks.push(newBlock);
+	}
+	
 	getAllBlocks() {
 		return this.blockChain.blocks;
 	}
@@ -37,20 +40,20 @@ module.exports = class BlockChainController {
 
 		var nextIndex = previousBlock.index + 1;
 		var nextTimeStamp = this.blockCtr.getTimeNow();
-		var newHash = this.blockCtr.calculateHash(nextIndex, previousBlock.hash, nextTimeStamp, nextBlockData);
+		var newHash = this.blockCtr.calculateHash(nextIndex, previousBlock.hash, nextTimeStamp, JSON.stringify(nextBlockData));
 		var newBlock = new Block(nextIndex, newHash, previousBlock.hash, nextTimeStamp, nextBlockData);
 
 		return newBlock;
 	}
 
 	isValidNewBlock(newBlock, lastestBlock) {
-		if (lastestBlock.index - 1 !== newBlock.index) {
+		if (newBlock.index - 1 !== lastestBlock.index) {
 			console.error('invalid index');
 			return false;
 		} else if (lastestBlock.hash !== newBlock.previousHash) {
 			console.error('invalid hash');
 			return false
-		} else if (this.calculateHashForBlock(newBlock) !== newBlock.hash) {
+		} else if (this.blockCtr.calculateHash(newBlock.index, newBlock.previousHash, newBlock.timeStamp, JSON.stringify(newBlock.data)) !== newBlock.hash) {
 			console.error('invalid hash : typeOf hash #');
 			return false;
 		}
@@ -76,20 +79,5 @@ module.exports = class BlockChainController {
 		}
 
 		return true;
-	}
-
-	addBlockToChain(newBlock) {
-		if (this.isValidNewBlock(newBlock, this.getLastestBlock())) {
-			this.blockChain.blocks.push(newBlock);
-			return true
-		}
-		return false;
-	}
-
-	replaceChain(newChain) {
-		if (this.isVaildChain(newChain) && newChain.blocks.length > this.getAllBlocks().length) {
-			this.blockChain = newChain;
-			P2P().broadcastLatest();
-		}
 	}
 }
