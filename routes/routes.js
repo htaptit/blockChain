@@ -1,27 +1,48 @@
-'use strict';
+const Express = require('express')
+const BodyParser = require('body-parser')
 
-module.exports = function(app) {
-	const p2p = require('../controllers/PeerToPeerWebSocket');
-	const __ = new p2p();
+/**
+ * Class Routes: creates the route management web server with express
+ */
+class Routes {
+  /**
+   * Creates an instance of a listening server
+   * @param port
+   * @param node
+   */
+  constructor (port, node) {
+    this.http_port = port
+    this._node = node
+    this.app = new Express()
 
-	var chain = require('../controllers/BlockChainController');
-	var _ = new chain();
+    this.app.use(BodyParser.json())
 
-	app.get('/blocks', (req, res) =>  {
-		res.send(__.blockChainController.blockChain.blocks);
-	});
+    this._node.init()
 
-	app.post('/addNewBlock', (req, res) => {
-		res.send(__.createNewBlock(req.query));
-	});
+    // GET
+    this.app.get('/blocks', (req, res) => {
+      res.send(this._node.getBlocks());
+    });
 
-	app.get('/peers', (req, res) => {
-		var sockets = __.getSockets();
-		res.send(sockets.map((s) => s._socket.remoteAddress + ':' + s._socket.remotePort));
-	});
 
-	app.post('/addPeer', (req, res) => {
-		__.connectToPeer(req.body.peer);
-		res.send();
-	});
+    // POST 
+    this.app.post('/addNode', (req, res) => {
+      console.log('add host: ' + req.query.port)
+      node.addPeer('localhost', req.query.port)
+      res.send()
+    })
+
+    this.app.post('/createBlock', (req, res) => {
+      node.createBlock(req.params.data)
+      console.log('block created')
+      res.send()
+    })
+
+
+    this.app.listen(this.http_port, () => {
+      console.log('http server up')
+    })
+  }
 }
+
+module.exports = Routes
