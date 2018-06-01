@@ -256,7 +256,7 @@ const Transactions = function() {
 		txIn.txOutIndex = blockIndex;
 
 		t.txIns = [txIn];
-		t.txtOuts = [new TxOut(address, COINBASE_AMOUNT)];
+		t.txOuts = [new TxOut(address, COINBASE_AMOUNT)];
 		t.id = getTransactionId(t);
 		return t;
 	}
