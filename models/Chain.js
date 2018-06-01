@@ -1,5 +1,5 @@
 "use strict";
-module.exports = class BlockChain {
+module.exports = class Chain {
 	constructor() {
 		this.blocks = [];
 	}

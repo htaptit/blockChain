@@ -1,16 +1,10 @@
-'use strict';
+const Routes = require('./routes/Routes')
+const Nodes = require('./controllers/Nodes')
 
-var express = require('express'),
-	app = express(),
-	port = process.env.PORT || 3000,
-	bodyParser = require('body-parser');
+const port = 18070 + Math.floor(Math.random() * 30)
+console.log('starting node on ', port)
 
-app.use(bodyParser.urlencoded({extended: true}));
-app.use(bodyParser.json());
+const httpPort = 3000 + Math.floor(Math.random() * 10)
 
-var routes = require('./routes/BlockChainRoutes');
-routes(app);
-
-app.listen(port, () => {
-	console.log("Listening port 3000 !");
-});
+let httpServer = new Routes(httpPort, new Nodes(port))
+console.log('created httpServer at port ', httpServer.http_port)
