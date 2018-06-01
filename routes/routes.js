@@ -38,6 +38,28 @@ class Routes {
       res.send()
     })
 
+    this.app.post('/mineRawBlock', (req, res) => {
+        if (req.body.data == null) {
+            res.send('data parameter is missing');
+            return;
+        }
+        const newBlock = generateRawNextBlock(req.body.data);
+        if (newBlock === null) {
+            res.status(400).send('could not generate block');
+        } else {
+            res.send(newBlock);
+        }
+    });
+
+    this.app.post('/mineBlock', (req, res) => {
+        const newBlock = this._node.mineBlock();
+        if (newBlock === null) {
+            res.status(400).send('could not generate block');
+        } else {
+            res.send(newBlock);
+        }
+    });
+
 
     this.app.listen(this.http_port, () => {
       console.log('http server up')

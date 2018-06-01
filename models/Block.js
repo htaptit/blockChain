@@ -6,6 +6,8 @@ module.exports = class Block {
 		this.hash = hash.toString();
 		this.previousHash = previousHash.toString();
 		this.timeStamp = timeStamp;
+		this.difficulty = difficulty;
+		this.nonce = nonce;
 		this.data = data;
 	}
 }
