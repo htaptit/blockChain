@@ -75,7 +75,7 @@ const BlockChain = function() {
 
 	function createBlock(data){
 		let newBlock = {
-		    timestamp: new Date().getTime()
+		    timestamp: getCurrentTimestamp()
 		  , data: data
 		  , index: currentBlock.index+1
 		  , previousHash: currentBlock.hash
@@ -101,14 +101,15 @@ const BlockChain = function() {
 	    	difficulty: _difficulty,
 	    	nonce: 0
 	    });
-	    
-	    if (addToChain(newBlock)) {
-	        // broadcastLatest();
-	        return newBlock;
-	    } else {
-	        return null;
-	    }
 
+
+	    return newBlock
+	    // if (addToChain(newBlock)) {
+	    //     // broadcastLatest();
+	    //     return newBlock;
+	    // } else {
+	    //     return null;
+	    // }
 	};
 
 	const generateNextBlock = () => {
@@ -271,11 +272,11 @@ const BlockChain = function() {
 	}
 
 	function isValidationTimestamp(newBlock, previousBlock) {
-		return newBlock.timestamp - 60 > previousBlock.timestamp && newBlock.timestamp + 60  > getCurrentTimestamp();
+		return newBlock.timestamp - 60 > previousBlock.timestamp && newBlock.timestamp + 60  < getCurrentTimestamp();
 	}
 
 	function getCurrentTimestamp() {
-		return Math.round(new Date().getTime() / 1000);
+		return Math.round(new Date().getTime());
 	}
 
 	return {

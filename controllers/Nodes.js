@@ -117,7 +117,14 @@ const Nodes = function(port){
     }
 
     const mineBlock = () => {
-        return chain.generateNextBlock();
+        const newBlock = chain.generateNextBlock();
+
+        if (chain.addToChain(newBlock)) {
+            broadcastMessage(BLOCK, newBlock);
+            return newBlock;
+        } else {
+            return null;
+        }
     }
 
     const getChain = () => {

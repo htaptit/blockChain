@@ -108,7 +108,7 @@ const Transactions = function() {
 																	, 0));
 		
 		const resultingUnspentTxOuts = aUnspentTextOuts
-											.filter((uTxO) => !findUnspentTxOut(uTxO.txtOutId
+											.filter((uTxO) => !findUnspentTxOut(uTxO.txOutId
 																				, uTxO.txOutIndex
 																				, consumedTxOuts))
 											.concat(newUnspentTxOuts);
@@ -117,7 +117,7 @@ const Transactions = function() {
 	}
 
 	const hashDulicates = (txIns) => {
-		const groups = _.countBy(txIns, (txIn) => txIn.txtOutId + txIn.txtOutIndex);
+		const groups = _.countBy(txIns, (txIn) => txIn.txOutId + txIn.txtOutIndex);
 		return _(groups)
 					.map((value, key) => {
 						if (value > 1) {
@@ -131,7 +131,7 @@ const Transactions = function() {
 	}
 
 	const validateTxIn = (txIx, transaction, aUnspentTextOuts) => {
-		const referencedUTxOut = aUnspentTextOuts.find((uTxO) => uTxO.txOutId === txIn.txtOutId && uTxO.txtOutId === txIn.txtOutId);
+		const referencedUTxOut = aUnspentTextOuts.find((uTxO) => uTxO.txOutId === txIn.txOutId && uTxO.txOutId === txIn.txOutId);
 		if (referencedUTxOut == null) {
 			console.log('referenced txOut not found: ' + JSON.stringify(txIn));
 			return false;
@@ -245,14 +245,14 @@ const Transactions = function() {
 	}
 
 	const getTxInAmount = (txIn, aUnspentTextOuts) => {
-		return findUnspentTxOut(txIn.txtOutId, txIn.txtOutIndex, aUnspentTextOuts).amount;
+		return findUnspentTxOut(txIn.txOutId, txIn.txOutIndex, aUnspentTextOuts).amount;
 	}
 
 	const getCoinbaseTransaction = (address, blockIndex) => {
 		const t = new Transaction();
 		const txIn = new TxIn();
 		txIn.signature = '';
-		txIn.txtOutId = '';
+		txIn.txOutId = '';
 		txIn.txOutIndex = blockIndex;
 
 		t.txIns = [txIn];
@@ -300,13 +300,13 @@ const Transactions = function() {
 	    if (txIn == null) {
 	        console.log('txIn is null');
 	        return false;
-	    } else if (typeof txIn.signature !== 'string') {
+	    } else if (typeof(txIn.signature) !== 'string') {
 	        console.log('invalid signature type in txIn');
 	        return false;
-	    } else if (typeof txIn.txOutId !== 'string') {
+	    } else if (typeof(txIn.txOutId) !== 'string') {
 	        console.log('invalid txOutId type in txIn');
 	        return false;
-	    } else if (typeof  txIn.txOutIndex !== 'number') {
+	    } else if (typeof(txIn.txOutIndex) !== 'number') {
 	        console.log('invalid txOutIndex type in txIn');
 	        return false;
 	    } else {
@@ -318,13 +318,13 @@ const Transactions = function() {
 	    if (txOut == null) {
 	        console.log('txOut is null');
 	        return false;
-	    } else if (typeof txOut.address !== 'string') {
+	    } else if (typeof(txOut.address) !== 'string') {
 	        console.log('invalid address type in txOut');
 	        return false;
 	    } else if (!isValidAddress(txOut.address)) {
 	        console.log('invalid TxOut address');
 	        return false;
-	    } else if (typeof txOut.amount !== 'number') {
+	    } else if (typeof(txOut.amount) !== 'number') {
 	        console.log('invalid amount type in txOut');
 	        return false;
 	    } else {
@@ -339,7 +339,7 @@ const Transactions = function() {
 	}
 
 	const isValidTransactionStructure = (transaction) => {
-	    if (typeof transaction.id !== 'string') {
+	    if (typeof(transaction.id) !== 'string') {
 	        console.log('transactionId missing');
 	        return false;
 	    }

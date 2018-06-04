@@ -53,7 +53,6 @@ class Routes {
 
     this.app.post('/mineBlock', (req, res) => {
         const newBlock = this._node.mineBlock();
-        console.log(newBlock);
         if (newBlock === null) {
             res.status(400).send('could not generate block');
         } else {
