@@ -1,4 +1,5 @@
 const BlockChain = require('./BlockChain');
+const transaction = require('./Transaction');
 const WebSocket = require('ws');
 
 const Nodes = function(port){
@@ -107,12 +108,23 @@ const Nodes = function(port){
         connection.on('close', () => closeConnection(connection));
     }
 
-    const createBlock = (teammember) => {
-        let newBlock = chain.createBlock(teammember)
+    const createBlock = (newBlock) => {
+        // let newBlock = chain.createBlock({id: 1, txtIns: [''], txOuts: })
         chain.addToChain(newBlock);
 
 		broadcastMessage(BLOCK, newBlock);
 
+    }
+
+    const mineBlock = () => {
+        const newBlock = chain.generateNextBlock();
+
+        if (chain.addToChain(newBlock)) {
+            broadcastMessage(BLOCK, newBlock);
+            return newBlock;
+        } else {
+            return null;
+        }
     }
 
     const getChain = () => {
@@ -152,7 +164,8 @@ const Nodes = function(port){
         createBlock,
         getStats,
         getChain,
-        getBlocks
+        getBlocks,
+        mineBlock
     }
 
 }
