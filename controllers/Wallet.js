@@ -45,7 +45,7 @@ const Wallet = function() {
 	        .sum();
 	};
 
-	const findUnspentTxOuts = (onerAddress, unspentTxOuts) => {
+	const findUnspentTxOuts = (ownerAddress, unspentTxOuts) => {
 		return _.filter(unspentTxOuts, (uTxO) => uTxO.address === ownerAddress);
 	}
 
