@@ -99,19 +99,19 @@ class Routes {
     });
 
     this.app.post('/sendTransaction', (req, res) => {
-        // try {
+        try {
             const address = req.query.address;
             const amount = parseInt(req.query.amount);
 
-        //     if (address === undefined || amount === undefined) {
-        //         throw Error('invalid address or amount');
-        //     }
+            if (address === undefined || amount === undefined) {
+                throw Error('invalid address or amount');
+            }
             const resp = this._node.sendTransaction(address, amount);
             res.send(resp);
-    //     } catch (e) {
-    //         console.log(e.message);
-    //         res.status(400).send(e.message);
-    //     }
+        } catch (e) {
+            console.log(e.message);
+            res.status(400).send(e.message);
+        }
     });
 
     this.app.get('/transactionPool', (req, res) => {
