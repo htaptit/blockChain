@@ -1,16 +1,18 @@
 const Crypto = require('crypto');
+const _ = require('lodash');
 const Transactions = require('./Transaction');
 const hexToBinary = require('./util');
 const Block = require('../models/Block');
 const Wallet = require('./Wallet');
+const TransactionPool = require('./TransactionPool');
 
 const BlockChain = function() {
 	// INIT CHAIN IS ARRAY BLOCKS
 	let chain = [];
-
-	let transaction = new Transactions();
 	let transactions = [];
 
+	let transaction = new Transactions();
+	let transactionPool = new TransactionPool();
 	let wallet = new Wallet();
 
 	let genesisTransaction = {
@@ -114,19 +116,21 @@ const BlockChain = function() {
 
 	const generateNextBlock = () => {
 	    const coinbaseTx = transaction.getCoinbaseTransaction(wallet.getPublicFromWallet(), currentBlock.index + 1); // Transaction
+	    console.log(coinbaseTx)
 	    const blockData = [coinbaseTx]; // : Transaction[]
 	    return generateRawNextBlock(blockData);
 	};
 
 	const generateNextBlockWithTransaction = (receiverAddress, amount) => {
-	    if (!isValidAddress(receiverAddress)) {
+	    if (!transaction.isValidAddress(receiverAddress)) {
 	        throw Error('invalid address');
 	    }
 	    if (typeof amount !== 'number') {
 	        throw Error('invalid amount');
 	    }
 	    const coinbaseTx = transaction.getCoinbaseTransaction(wallet.getPublicFromWallet(), currentBlock.index + 1); // : Transaction
-	    const tx = wallet.createTransaction(receiverAddress, amount, wallet.getPrivateFromWallet(), unspentTxOuts); // : Transaction
+	    // console.log(getUnspentTxOuts());
+	    const tx = wallet.createTransaction(receiverAddress, amount, wallet.getPrivateFromWallet(), getUnspentTxOuts(), transactionPool.getTransactionPool()); // : Transaction
 	    const blockData = [coinbaseTx, tx]; // : Transaction[]
 	    return generateRawNextBlock(blockData);
 	};
@@ -152,6 +156,10 @@ const BlockChain = function() {
 	//         nonce++;
 	//     }
 	// };
+
+	function getAccountBalance() {
+		return wallet.getBalance(wallet.getPublicFromWallet(), unspentTxOuts);
+	}
 
 	function hasValidHash(block) {
 	    if (!hashMatchesBlockContent(block)) {
@@ -279,6 +287,33 @@ const BlockChain = function() {
 		return Math.round(new Date().getTime());
 	}
 
+	function getUnspentTxOuts() {
+		return _.cloneDeep(unspentTxOuts)
+	}
+
+	function setUnspentTxOuts(newUnspentTxOut) {
+		console.log('replacing unspentTxouts with: %s', newUnspentTxOut);
+		unspentTxouts = newUnspentTxOut
+	}
+
+	function getMyUnspentTransactionOutputs() {
+		return wallet.findUnspentTxOuts(wallet.getPublicFromWallet(), getUnspentTxOuts());
+	}
+
+	function createTransaction(address, amount) {
+		const tx = wallet.createTransaction(address, 
+											amount, 
+											wallet.getPrivateFromWallet(), 
+											getUnspentTxOuts(), 
+											transactionPool.getTransactionPool());
+
+		return tx;
+	}
+
+	function handleReceiveTransactionPool(transaction) {
+		transactionPool.addToTransactionPool(transaction, this.transaction.getUnspentTxOuts());
+	}
+
 	return {
 		init,
 		createBlock,
@@ -290,7 +325,12 @@ const BlockChain = function() {
 		checkNewChainIsValid,
 		replaceChain,
 		generateNextBlock,
-		generateRawNextBlock
+		generateRawNextBlock,
+		getUnspentTxOuts,
+		getMyUnspentTransactionOutputs,
+		getAccountBalance,
+		generateNextBlockWithTransaction,
+		createTransaction
 	};
 };
 

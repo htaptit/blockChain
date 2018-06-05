@@ -1,5 +1,5 @@
 const BlockChain = require('./BlockChain');
-const transaction = require('./Transaction');
+const TransactionPool = require('./TransactionPool');
 const WebSocket = require('ws');
 
 const Nodes = function(port){
@@ -7,11 +7,14 @@ const Nodes = function(port){
     let _server;
     let _port = port
     let chain = new BlockChain();
+    let transactionPool = new TransactionPool();
 
     const REQUEST_CHAIN = "REQUEST_CHAIN";
     const REQUEST_BLOCK = "REQUEST_BLOCK";
     const BLOCK = "BLOCK";
 	const CHAIN = "CHAIN";
+    const QUERY_TRANSACTION_POOL = "REQUEST_TRANSACTION";
+    const RESPONSE_TRANSACTION_POOL = "RESPONSE_TRANSACTION"
 
     function init() {
 
@@ -40,14 +43,52 @@ const Nodes = function(port){
                     break;  
                 case CHAIN:
                     processedRecievedChain(msg.message);
-                    break;  
-
+                    break;
+                case QUERY_TRANSACTION_POOL: 
+                    requestTransactionPool(connection)
+                    break;
+                case RESPONSE_TRANSACTION_POOL:
+                    processedRecivedTransactionPool(msg.message)
+                    break;
                 default:  
                     console.log('Unknown message ');
             }
         });
     }
 
+    // function handleReceiveTransactionPool(transaction) {
+    //     transactionPool.addToTransactionPool(transaction, chain.transaction.getUnspentTxOuts());
+    // }
+
+    const requestTransactionPool = (connection) => {
+        connection.send(JSON.stringify( {event: RESPONSE_TRANSACTION_POOL, message: transactionPool.getTransactionPool()} ))
+    }
+
+    const processedRecivedTransactionPool = (transactions) => {
+        if(transactions === null) {
+            console.log("invalid transactions received: %s", transactions );
+            return;
+        }
+
+        transactions.forEach((transaction) => {
+            try {
+                chain.handleReceiveTransactionPool(transaction);
+                broadcastMessage(QUERY_TRANSACTION_POOL, "");
+            } catch(e) {
+                console.log("Error: %s", e);
+            }
+        })
+    }
+
+    const broadcastTransactionPool = () => {
+        broadcastMessage(QUERY_TRANSACTION_POOL, "");
+    }
+
+    const sendTransaction = (address, amount) => {
+        const newTx = chain.createTransaction(address, amount);
+        transactionPool.addToTransactionPool(newTx, chain.getUnspentTxOuts());
+        broadcastMessage(QUERY_TRANSACTION_POOL, "");
+    }
 
     const processedRecievedChain = (blocks) => {
         let newChain = blocks.sort((block1, block2) => (block1.index - block2.index))
@@ -86,6 +127,15 @@ const Nodes = function(port){
         connection.send(JSON.stringify({ event: BLOCK, message: chain.getLatestBlock()}))   
     }
 
+    // TRANSACTION POOL
+    // const queryTransactionPoolMsg = (connection) => {
+    //     connection.send(JSON.stringify( {event: QUERY_TRANSACTION_POOL, message: null} ))
+    // }
+
+    // const responseTransactionPoolMsg = (connection) => {
+    //     connection.send(JSON.stringify( {event: RESPONSE_TRANSACTION_POOL, message: transactionPool.getTransactionPool() } ));
+    // }
+
     const broadcastMessage = (event, message) => {
         _sockets.forEach(node => node.send(JSON.stringify({ event, message})))
     }
@@ -103,6 +153,10 @@ const Nodes = function(port){
         requestLatestBlock(connection);
 
         _sockets.push(connection);
+
+        setTimeout(() => {
+            broadcastMessage(QUERY_TRANSACTION_POOL, "")
+        }, 500)
 
         connection.on('error', () => closeConnection(connection));
         connection.on('close', () => closeConnection(connection));
@@ -133,6 +187,31 @@ const Nodes = function(port){
         }
     }
 
+    const getUnspentTxOuts = () => {
+        return {
+            unspentTxOuts : chain.getUnspentTxOuts()
+        }
+    }
+
+    const getMyUnspentTransactionOutputs = () => {
+        return {
+            myUnspentTransactionOutputs: chain.getMyUnspentTransactionOutputs()
+        }
+    }
+
+    const getAccountBalance = () => {
+        return  { 
+            balance : chain.getAccountBalance()
+        }
+    }
+
+    const generateNextBlockWithTransaction = (address, amount) => {
+        return chain.generateNextBlockWithTransaction(address, amount);
+    }
+
+    // const sendTransaction = (address, amount) => {
+    //     return chain.sendTransaction(address, amount)
+    // }
     const getBlocks = () => {
     	return  {
     		blocks : chain.getBlocks()
@@ -165,7 +244,12 @@ const Nodes = function(port){
         getStats,
         getChain,
         getBlocks,
-        mineBlock
+        mineBlock,
+        getUnspentTxOuts,
+        getMyUnspentTransactionOutputs,
+        getAccountBalance,
+        generateNextBlockWithTransaction,
+        sendTransaction
     }
 
 }

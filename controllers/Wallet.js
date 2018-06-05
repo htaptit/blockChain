@@ -2,9 +2,12 @@ const Elliptic = require('elliptic');
 const fs = require('fs');
 const _ = require('lodash');
 const Transaction = require('./Transaction');
+const TxIn = require('../models/TxIn');
+const TxOut = require('../models/TxOut');
+
 
 const EC = new Elliptic.ec('secp256k1');
-const privateKeyLocation = 'node/wallet/private_key';
+const privateKeyLocation = process.env.PRIVATE_KEY || 'node/wallet/private_key';
 
 const Wallet = function() {
 	const getPrivateFromWallet = () => {
@@ -24,7 +27,7 @@ const Wallet = function() {
 		return privateKey.toString(16);
 	}
 
-	const initWallet = () => {
+	const init = () => {
 		if (fs.existsSync(privateKeyLocation)) {
 			return;
 		}
@@ -42,6 +45,10 @@ const Wallet = function() {
 	        .sum();
 	};
 
+	const findUnspentTxOuts = (onerAddress, unspentTxOuts) => {
+		return _.filter(unspentTxOuts, (uTxO) => uTxO.address === ownerAddress);
+	}
+
 	const findTxOutsForAmount = (amount, myUnspentTxOuts) => {
 	    let currentAmount = 0;
 	    const includedUnspentTxOuts = [];
@@ -53,8 +60,39 @@ const Wallet = function() {
 	            return {includedUnspentTxOuts, leftOverAmount};
 	        }
 	    }
-	    throw Error('not enough coins to send transaction');
+
+	    const eMsg = "Không thể tạo giao dịch từ các đầu ra giao dịch chưa có sẵn." + " Sô tiền bắt buộc :" + amount + '. Available unspentTxOuts:' + JSON.stringify(myUnspentTxOuts);
+	    throw Error(eMsg);
 	};
+
+	const filterTxPoolTxs = (unspentTxOuts, transactionPool) => {
+		const txIns = _(transactionPool)
+			.map(tx => tx.txIns)
+			.flatten()
+			.value();
+
+			const removable = [];
+
+			for (const unspentTxOut of unspentTxOuts) {
+				const txIn = _.find(txIns, aTxIn => {
+					return aTxIn.txOutIndex === unspentTxOut.txOutIndex && aTxIn.txOutId === unspentTxOut.txOutId;
+				});
+
+				if (txIn === undefined) {
+
+				} else {
+					removable.push(unspentTxOut)
+				}
+			}
+
+			return _.without(unspentTxOuts, ...removable);
+	}
+
+	const deleteWallet = () => {
+		if (fs.existsSync(privateKeyLocation)) {
+			fs.unlinkSync(privateKeyLocation);
+		}
+	}
 
 	const createTxOuts = (receiverAddress, myAddress, amount, leftOverAmount) => {
 	    const txOut1 = new TxOut(receiverAddress, amount);
@@ -66,9 +104,14 @@ const Wallet = function() {
 	    }
 	};
 
-	const createTransaction = (receiverAddress, amount, privateKey, unspentTxOuts) => {
-	    const myAddress = getPublicKey(privateKey);
-	    const myUnspentTxOuts = unspentTxOuts.filter((uTxO) => uTxO.address === myAddress);
+	const createTransaction = (receiverAddress, amount, privateKey, unspentTxOuts, txPool) => {
+		console.log('txPool : %s', JSON.stringify(privateKey));
+		const __ = new Transaction();
+
+	    const myAddress = __.getPublicKey(privateKey);
+	    const myUnspentTxOutsA = unspentTxOuts.filter(uTxO => uTxO.address === myAddress);
+
+	    const myUnspentTxOuts = filterTxPoolTxs(myUnspentTxOutsA, txPool);
 
 	    const {includedUnspentTxOuts, leftOverAmount} = findTxOutsForAmount(amount, myUnspentTxOuts);
 
@@ -84,10 +127,10 @@ const Wallet = function() {
 	    const tx = new Transaction();
 	    tx.txIns = unsignedTxIns;
 	    tx.txOuts = createTxOuts(receiverAddress, myAddress, amount, leftOverAmount);
-	    tx.id = getTransactionId(tx);
+	    tx.id = __.getTransactionId(tx);
 
 	    tx.txIns = tx.txIns.map((txIn, index) => {
-	        txIn.signature = signTxIn(tx, index, privateKey, unspentTxOuts);
+	        txIn.signature = __.signTxIn(tx, index, privateKey, unspentTxOuts);
 	        return txIn;
 	    });
 
@@ -96,7 +139,7 @@ const Wallet = function() {
 
 	return {
 		createTransaction, getPublicFromWallet,
-    	getPrivateFromWallet, getBalance, generatePrivateKey, initWallet
+    	getPrivateFromWallet, getBalance, generatePrivateKey, init, deleteWallet, findUnspentTxOuts
 	}
 }
 

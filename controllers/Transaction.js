@@ -1,25 +1,20 @@
 const Crypto = require('crypto');
 const ecdsa = require('elliptic');
 const _ = require('lodash');
+const TxIn = require('../models/TxIn');
+const TxOut = require('../models/TxOut');
 
 const ec = new ecdsa.ec('secp256k1');
 const COINBASE_AMOUNT = 50;
 
-class TxOut {
-		constructor(address, amount) {
-			this.address = address;
-			this.amount = amount;
-		}
-	}
 
-module.exports = TxOut
 
 // Tham chieu den TransactionOutputs chua duoc chi tieu
-class TxIn {
-	// txOutId , txOutIndex, signature
-}
+// class TxIn {
+// 	// txOutId , txOutIndex, signature
+// }
 
-module.exports = TxIn;
+// exports.TxIn = TxIn;
 
 // Giao dich chua duoc chi tieu
 class UnspentTxOut {
@@ -37,7 +32,7 @@ class Transaction {
 	// id, txIns[], txOuts[]
 }
 
-module.exports = Transaction;
+exports.Transaction = Transaction;
 
 const Transactions = function() {
 	let unspentTxOuts = []; // array UnspentTxOut
@@ -130,7 +125,7 @@ const Transactions = function() {
 					.includes(true);
 	}
 
-	const validateTxIn = (txIx, transaction, aUnspentTextOuts) => {
+	const validateTxIn = (txIn, transaction, aUnspentTextOuts) => {
 		const referencedUTxOut = aUnspentTextOuts.find((uTxO) => uTxO.txOutId === txIn.txOutId && uTxO.txOutId === txIn.txOutId);
 		if (referencedUTxOut == null) {
 			console.log('referenced txOut not found: ' + JSON.stringify(txIn));
@@ -382,7 +377,7 @@ const Transactions = function() {
 	};
 
 	return {
-		processTransactions, signTxIn, getTransactionId, getCoinbaseTransaction, getPublicKey,
+		processTransactions, signTxIn, getTransactionId, getCoinbaseTransaction, getPublicKey, isValidAddress, validateTransaction
 	    
 	}
 
