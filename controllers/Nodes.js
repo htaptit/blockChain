@@ -2,12 +2,12 @@ const BlockChain = require('./BlockChain');
 const TransactionPool = require('./TransactionPool');
 const WebSocket = require('ws');
 
-const Nodes = function(port){
+const Nodes = function(port, transaction, transactionPool, wallet){
     let _sockets = [];
     let _server;
     let _port = port
-    let chain = new BlockChain();
-    let transactionPool = new TransactionPool();
+    let chain = new BlockChain(transaction, transactionPool, wallet);
+    // let transactionPool = new TransactionPool();
 
     const REQUEST_CHAIN = "REQUEST_CHAIN";
     const REQUEST_BLOCK = "REQUEST_BLOCK";
@@ -206,7 +206,14 @@ const Nodes = function(port){
     }
 
     const generateNextBlockWithTransaction = (address, amount) => {
-        return chain.generateNextBlockWithTransaction(address, amount);
+        newBloclWithTransaction = chain.generateNextBlockWithTransaction(address, amount);
+
+        if (chain.addToChain(newBloclWithTransaction)) {
+            broadcastMessage(BLOCK, newBloclWithTransaction);
+            return newBloclWithTransaction;
+        } else {
+            return null;
+        }
     }
 
     // const sendTransaction = (address, amount) => {

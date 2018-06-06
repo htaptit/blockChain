@@ -3,6 +3,7 @@ const ecdsa = require('elliptic');
 const _ = require('lodash');
 const TxIn = require('../models/TxIn');
 const TxOut = require('../models/TxOut');
+const Transaction = require('../models/Tx');
 
 const ec = new ecdsa.ec('secp256k1');
 const COINBASE_AMOUNT = 50;
@@ -28,11 +29,11 @@ class UnspentTxOut {
 
 module.exports = UnspentTxOut;
 
-class Transaction {
-	// id, txIns[], txOuts[]
-}
+// class Transaction {
+// 	// id, txIns[], txOuts[]
+// }
 
-exports.Transaction = Transaction;
+// exports.Transaction = Transaction;
 
 const Transactions = function() {
 	let unspentTxOuts = []; // array UnspentTxOut

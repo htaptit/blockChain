@@ -1,19 +1,19 @@
 const Crypto = require('crypto');
 const _ = require('lodash');
-const Transactions = require('./Transaction');
+// const Transactions = require('./Transaction');
 const hexToBinary = require('./util');
 const Block = require('../models/Block');
-const Wallet = require('./Wallet');
-const TransactionPool = require('./TransactionPool');
+// const Wallet = require('./Wallet');
+// const TransactionPool = require('./TransactionPool');
 
-const BlockChain = function() {
+const BlockChain = function(transaction, transactionPool, wallet) {
 	// INIT CHAIN IS ARRAY BLOCKS
 	let chain = [];
 	let transactions = [];
 
-	let transaction = new Transactions();
-	let transactionPool = new TransactionPool();
-	let wallet = new Wallet();
+	// let transaction = new Transactions();
+	// let transactionPool = new TransactionPool();
+	// let wallet = new Wallet();
 
 	let genesisTransaction = {
     'txIns': [{ 'signature': '', 'txOutId': '', 'txOutIndex': 0 }],
@@ -104,6 +104,7 @@ const BlockChain = function() {
 	    	nonce: 0
 	    });
 
+	    // currentBlock = newBlock;
 
 	    return newBlock
 	    // if (addToChain(newBlock)) {
