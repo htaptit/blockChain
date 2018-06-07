@@ -1,13 +1,14 @@
 const Elliptic = require('elliptic');
 const fs = require('fs');
 const _ = require('lodash');
+const path = require('path');
 // const Transaction = require('./Transaction');
 const TxIn = require('../models/TxIn');
 const TxOut = require('../models/TxOut');
 const Transaction = require('../models/Tx');
 
 const EC = new Elliptic.ec('secp256k1');
-const privateKeyLocation = process.env.PRIVATE_KEY || 'node/wallet/private_key';
+const privateKeyLocation = path.resolve(process.cwd(), '.env');
 
 const Wallet = function(transaction) {
 	const getPrivateFromWallet = () => {
@@ -28,16 +29,20 @@ const Wallet = function(transaction) {
 	}
 
 	const init = () => {
-		if (fs.existsSync(privateKeyLocation)) {
+		if (fs.existsSync(privateKeyLocation) && process.env.PRIVATE_KEY !== undefined) {
 			return;
 		}
 
 		const newPrivateKey = generatePrivateKey();
 
-		fs.writeFileSync(privateKeyLocation, newPrivateKey);
-		console.log('New wallet with private key created !');
+		fs.appendFile(privateKeyLocation, "\n\nPRIVATE_KEY=" + newPrivateKey, function(err) {
+			if (err) throw err;
+
+			console.log('New wallet with private key created !');
+		})
 	}
 
+	// Kiem tra tien trong Vi
 	const getBalance = (address, unspentTxOuts) => {
 	    return _(unspentTxOuts)
 	        .filter((uTxO) => uTxO.address === address)

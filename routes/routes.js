@@ -120,7 +120,7 @@ class Routes {
 
 
     this.app.listen(this.http_port, () => {
-      console.log('http server up')
+      console.log('Server up ! ')
     })
   }
 }

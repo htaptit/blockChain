@@ -1,28 +1,19 @@
+// npm install 
 const Crypto = require('crypto');
 const _ = require('lodash');
-// const Transactions = require('./Transaction');
+
+// util
 const hexToBinary = require('./util');
-const Block = require('../models/Block');
-// const Wallet = require('./Wallet');
-// const TransactionPool = require('./TransactionPool');
+
+// models
+const Tx = require('../models/Tx');
+const TxIn = require('../models/TxIn');
+const TxOut = require('../models/TxOut');
 
 const BlockChain = function(transaction, transactionPool, wallet) {
 	// INIT CHAIN IS ARRAY BLOCKS
 	let chain = [];
 	let transactions = [];
-
-	// let transaction = new Transactions();
-	// let transactionPool = new TransactionPool();
-	// let wallet = new Wallet();
-
-	let genesisTransaction = {
-    'txIns': [{ 'signature': '', 'txOutId': '', 'txOutIndex': 0 }],
-    'txOuts': [{
-            'address': '04bfcab8722991ae774db48f934ca79cfb7dd991229153b9f732ba5334aafcd8e7266e47076996b55a14bf9913ee3145ce0cfc1372ada8ada74bd287450313534a',
-            'amount': 50
-        }],
-    'id': 'e655f6a5f26dc9b4cac6e46f52336428287759cf81ef5ff10854f69d68f43fa3'
-	};
 
 	let unspentTxOuts = [];
 
@@ -40,18 +31,32 @@ const BlockChain = function(transaction, transactionPool, wallet) {
 
 	function init(){
 		genesisBlock = { 
-            index: 0
-		  , timestamp: 1511818270000
-		  , data: [genesisTransaction]
-		  , previousHash: "-1"
+            index: parseInt( process.env.INDEX_INIT_BLOCK )
+		  , timestamp: parseInt( process.env.TIMESTAMP_INIT_BLOCK )
+		  , data: [genesisTx()]
+		  , previousHash: process.env.PREVIOUS_HASH_INIT_BLOCK
 		  , difficulty: DIFFICULTY
-		  , nonce: 0
+		  , nonce: parseInt( process.env.NONCE_INIT_BLOCK )
 		};
 
 		genesisBlock = proofOfWork(genesisBlock);
 		chain.push(genesisBlock);
 		currentBlock = genesisBlock;
-		unspentTxOuts = transaction.processTransactions(genesisBlock.data, [], 0);
+		unspentTxOuts = transaction.processTransactions(genesisBlock.data, [], parseInt( process.env.INDEX_INIT_BLOCK ));
+	}
+
+	function genesisTx() {
+		const t = new Tx(); // new Transaction
+		const txIn = new TxIn();
+		txIn.signature = '';
+		txIn.txOutId = '';
+		txIn.txOutIndex = parseInt( process.env.INDEX_INIT_BLOCK );
+
+		t.txIns = [txIn];
+		t.txOuts = [new TxOut(wallet.getPublicFromWallet(), parseInt(process.env.COINBASE_AMOUNT))];
+		t.id = transaction.getTransactionId(t);
+
+		return t
 	}
 
 	function createHash({ timestamp, data, index, previousHash, difficulty,nonce }) {
@@ -60,6 +65,7 @@ const BlockChain = function(transaction, transactionPool, wallet) {
 
 	function addToChain(block){
 		if(checkNewBlockIsValid(block, currentBlock)) {
+			console.log(unspentTxOuts)
 			const retVal = transaction.processTransactions(block.data, unspentTxOuts, block.index);
 
 			if(retVal === null) {
@@ -104,20 +110,11 @@ const BlockChain = function(transaction, transactionPool, wallet) {
 	    	nonce: 0
 	    });
 
-	    // currentBlock = newBlock;
-
 	    return newBlock
-	    // if (addToChain(newBlock)) {
-	    //     // broadcastLatest();
-	    //     return newBlock;
-	    // } else {
-	    //     return null;
-	    // }
 	};
 
 	const generateNextBlock = () => {
 	    const coinbaseTx = transaction.getCoinbaseTransaction(wallet.getPublicFromWallet(), currentBlock.index + 1); // Transaction
-	    console.log(coinbaseTx)
 	    const blockData = [coinbaseTx]; // : Transaction[]
 	    return generateRawNextBlock(blockData);
 	};
@@ -146,17 +143,6 @@ const BlockChain = function(transaction, transactionPool, wallet) {
 			}
 		}
 	}
-
-	// function findBlock(index, previousHash, timestamp, data, difficulty) {
-	//     let nonce = 0;
-	//     while (true) {
-	//         const hash = createHash(index, previousHash, timestamp, data, difficulty, nonce);
-	//         if (hashMatchesDifficulty(hash, difficulty)) {
-	//             return new Block(index, hash, previousHash, timestamp, data, difficulty, nonce);
-	//         }
-	//         nonce++;
-	//     }
-	// };
 
 	function getAccountBalance() {
 		return wallet.getBalance(wallet.getPublicFromWallet(), unspentTxOuts);

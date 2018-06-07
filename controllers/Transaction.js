@@ -6,8 +6,9 @@ const TxOut = require('../models/TxOut');
 const Transaction = require('../models/Tx');
 
 const ec = new ecdsa.ec('secp256k1');
-const COINBASE_AMOUNT = 50;
 
+const COINBASE_AMOUNT = 50;
+exports.COINBASE_AMOUNT = COINBASE_AMOUNT;
 
 
 // Tham chieu den TransactionOutputs chua duoc chi tieu
