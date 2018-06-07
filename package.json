@@ -1,0 +1,31 @@
+{
+  "lockfileVersion": 1,
+  "name": "blockchain",
+  "description": "# Update lib    npm install --save",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/htaptit/blockChain.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/htaptit/blockChain/issues"
+  },
+  "homepage": "https://github.com/htaptit/blockChain#readme",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "crypto-js": "^3.1.9-1",
+    "dotenv": "^6.0.0",
+    "elliptic": "^6.4.0",
+    "express": "^4.16.3",
+    "ip": "^1.1.5",
+    "lodash": "^4.17.10",
+    "validator": "^10.3.0",
+    "ws": "^5.2.0"
+  }
+}
